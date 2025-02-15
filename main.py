@@ -1,118 +1,59 @@
-
-
-
-
-
 import os
-
-bot_token = os.getenv("BOT_TOKEN")
-
-if bot_token is None or bot_token.strip() == "":
-    print("❌ BOT_TOKEN muhit o‘zgaruvchisi yuklanmadi! Railway'dagi `Variables` bo‘limini tekshiring.")
-    raise ValueError("❌ BOT_TOKEN yo‘q! Railway'dagi muhit o‘zgaruvchisini tekshiring.")
-else:
-    print("✅ BOT_TOKEN muvaffaqiyatli yuklandi!")
-
-
-
-import os
-
-print("🔍 Railway'dan GOOGLE_CREDENTIALS ni tekshiryapmiz...")
-google_creds = os.getenv("GOOGLE_CREDENTIALS")
-
-if google_creds is None:
-    print("❌ GOOGLE_CREDENTIALS muhit o‘zgaruvchisi yuklanmadi!")
-else:
-    print("✅ GOOGLE_CREDENTIALS topildi!")
-
-
-
-
-import os
+import telebot
 import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# GOOGLE_CREDENTIALS ni tekshirish
-creds_json_str = os.getenv("GOOGLE_CREDENTIALS")
+# 🔍 Muhit o‘zgaruvchilarini yuklash
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # Telegram boti uchun token
+GOOGLE_CREDENTIALS = os.getenv("GOOGLE_CREDENTIALS")  # Google API uchun JSON credentials
+SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")  # Google Sheets ID
 
-if not creds_json_str:
+# 🔎 Muhit o‘zgaruvchilarini tekshirish
+if not BOT_TOKEN:
+    raise ValueError("❌ BOT_TOKEN topilmadi! Railway'dagi muhit o‘zgaruvchisini tekshiring.")
+
+if not GOOGLE_CREDENTIALS:
     raise ValueError("❌ GOOGLE_CREDENTIALS topilmadi! Railway'dagi muhit o‘zgaruvchisini tekshiring.")
 
+if not SPREADSHEET_ID:
+    raise ValueError("❌ SPREADSHEET_ID topilmadi! Railway'dagi muhit o‘zgaruvchisini tekshiring.")
+
+print("✅ BOT_TOKEN muvaffaqiyatli yuklandi!")
+print("🔍 Railway'dan GOOGLE_CREDENTIALS ni tekshiryapmiz...")
+
+# 🔐 Google Sheets bilan bog‘lanish
 try:
-    creds_json = json.loads(creds_json_str)
-except json.JSONDecodeError:
-    raise ValueError("❌ GOOGLE_CREDENTIALS JSON formatida noto‘g‘ri saqlangan. Railway'dagi ma’lumotni tekshiring.")
+    creds_dict = json.loads(GOOGLE_CREDENTIALS)  # JSON stringni dictionary ko‘rinishiga o‘tkazish
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"])
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(SPREADSHEET_ID).sheet1
+    print("✅ Google Sheets bilan muvaffaqiyatli bog‘landik!")
+except Exception as e:
+    raise ValueError(f"❌ Google Sheets bilan bog‘lanishda xatolik: {e}")
 
-# Google Sheets API uchun autentifikatsiya qilish
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
-client = gspread.authorize(creds)
+# 🔹 Telegram botni ishga tushirish
+bot = telebot.TeleBot(BOT_TOKEN)
 
-print("✅ Google Sheets bilan muvaffaqiyatli bog‘landik!")
-
-
-
-
-
-
-
-import os
-import json
-import gspread
-import telebot
-from oauth2client.service_account import ServiceAccountCredentials
-from flask import Flask, request
-import os
-
-
-# 📌 Flask ilovasini yaratamiz (Railway uchun kerak)
-app = Flask(__name__)
-
-# 📌 Railway environment variables orqali API kalitlarni yuklash
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
-
-# 📌 Google Sheets'ga ulanish
-creds_json = json.loads(os.getenv("GOOGLE_CREDENTIALS"))  # Railway'dan JSON yuklash
-SCOPES = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-
-credentials = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, SCOPES)
-client = gspread.authorize(credentials)
-
-# 📌 Google Sheets sahifasini ochamiz
-sheet = client.open_by_key(SPREADSHEET_ID).sheet1  # Birinchi qatordagi sahifa
-
-# 📌 Telegram botini ishga tushiramiz
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
-
-# 📌 Start komandasi
+# 📩 /start komandasi
 @bot.message_handler(commands=['start'])
-def start(message):
-    bot.send_message(message.chat.id, "Salom! Bu bot Google Sheets bilan ishlaydi.")
+def send_welcome(message):
+    bot.reply_to(message, "Salom! 👋 Men Google Sheets bilan ishlovchi botman!")
 
-# 📌 Google Sheets'ga yozish funksiyasi
-@bot.message_handler(func=lambda message: True)
-def save_to_sheet(message):
+# 📩 /add komandasi -> Google Sheetsga ma'lumot qo‘shish
+@bot.message_handler(commands=['add'])
+def add_data(message):
     try:
-        text = message.text
-        user = message.chat.username or message.chat.first_name
-        sheet.append_row([user, text])  # Foydalanuvchi nomi va xabarini saqlash
-        bot.send_message(message.chat.id, "Xabaringiz Google Sheets'ga saqlandi!")
+        text = message.text.replace("/add", "").strip()
+        if not text:
+            bot.reply_to(message, "⚠️ Iltimos, qo‘shiladigan matnni ham yuboring.\nMisol: `/add O‘quvchilar ro‘yxati`")
+            return
+        
+        sheet.append_row([text])  # Google Sheetsga qo‘shish
+        bot.reply_to(message, f"✅ `{text}` ma'lumoti muvaffaqiyatli qo‘shildi!")
     except Exception as e:
-        bot.send_message(message.chat.id, f"Xatolik: {e}")
+        bot.reply_to(message, f"❌ Xatolik yuz berdi: {e}")
 
-# 📌 Railway uchun webhook sozlash
-@app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
-def webhook():
-    json_str = request.get_data().decode("UTF-8")
-    update = telebot.types.Update.de_json(json_str)
-    bot.process_new_updates([update])
-    return "OK", 200
-
-# 📌 Flask serverni ishga tushiramiz
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-# GOOGLE_CREDENTIALS o'zgaruvchisini ekranga chiqarish
-print("GOOGLE_CREDENTIALS:", os.getenv("GOOGLE_CREDENTIALS"))
+# 🔄 Botni ishga tushirish
+print("🚀 Telegram bot ishga tushirildi...")
+bot.polling(none_stop=True)
