@@ -4,6 +4,10 @@ import gspread
 import telebot
 from oauth2client.service_account import ServiceAccountCredentials
 from flask import Flask, request
+import os
+
+# GOOGLE_CREDENTIALS o'zgaruvchisini ekranga chiqarish
+print("GOOGLE_CREDENTIALS:", os.getenv("GOOGLE_CREDENTIALS"))
 
 # 📌 Flask ilovasini yaratamiz (Railway uchun kerak)
 app = Flask(__name__)
