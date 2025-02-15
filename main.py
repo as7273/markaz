@@ -4,10 +4,10 @@ import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# 🔍 Muhit o‘zgaruvchilarini yuklash
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Telegram boti uchun token
-GOOGLE_CREDENTIALS = os.getenv("GOOGLE_CREDENTIALS")  # Google API uchun JSON credentials
-SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")  # Google Sheets ID
+# ✅ Muhit o‘zgaruvchilarini yuklash
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # TO‘G‘RI NOM
+GOOGLE_CREDENTIALS = os.getenv("GOOGLE_CREDENTIALS")
+SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 
 # 🔎 Muhit o‘zgaruvchilarini tekshirish
 if not BOT_TOKEN:
@@ -24,8 +24,10 @@ print("🔍 Railway'dan GOOGLE_CREDENTIALS ni tekshiryapmiz...")
 
 # 🔐 Google Sheets bilan bog‘lanish
 try:
-    creds_dict = json.loads(GOOGLE_CREDENTIALS)  # JSON stringni dictionary ko‘rinishiga o‘tkazish
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"])
+    creds_dict = json.loads(GOOGLE_CREDENTIALS)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+        creds_dict, ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    )
     client = gspread.authorize(creds)
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
     print("✅ Google Sheets bilan muvaffaqiyatli bog‘landik!")
@@ -33,27 +35,11 @@ except Exception as e:
     raise ValueError(f"❌ Google Sheets bilan bog‘lanishda xatolik: {e}")
 
 # 🔹 Telegram botni ishga tushirish
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN)  # TO‘G‘RI NOM ISHLATILDI!
 
-# 📩 /start komandasi
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.reply_to(message, "Salom! 👋 Men Google Sheets bilan ishlovchi botman!")
 
-# 📩 /add komandasi -> Google Sheetsga ma'lumot qo‘shish
-@bot.message_handler(commands=['add'])
-def add_data(message):
-    try:
-        text = message.text.replace("/add", "").strip()
-        if not text:
-            bot.reply_to(message, "⚠️ Iltimos, qo‘shiladigan matnni ham yuboring.\nMisol: `/add O‘quvchilar ro‘yxati`")
-            return
-        
-        sheet.append_row([text])  # Google Sheetsga qo‘shish
-        bot.reply_to(message, f"✅ `{text}` ma'lumoti muvaffaqiyatli qo‘shildi!")
-    except Exception as e:
-        bot.reply_to(message, f"❌ Xatolik yuz berdi: {e}")
-
-# 🔄 Botni ishga tushirish
 print("🚀 Telegram bot ishga tushirildi...")
 bot.polling(none_stop=True)
