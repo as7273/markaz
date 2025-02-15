@@ -17,6 +17,43 @@ else:
 
 
 
+import os
+
+google_creds = os.getenv("GOOGLE_CREDENTIALS")
+
+if google_creds is None:
+    raise ValueError("❌ GOOGLE_CREDENTIALS yo‘q! Railway'da muhit o‘zgaruvchisini to‘g‘ri o‘rnating.")
+else:
+    print("✅ GOOGLE_CREDENTIALS mavjud!")
+
+
+
+
+import os
+import json
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+# GOOGLE_CREDENTIALS ni tekshirish
+creds_json_str = os.getenv("GOOGLE_CREDENTIALS")
+
+if not creds_json_str:
+    raise ValueError("❌ GOOGLE_CREDENTIALS topilmadi! Railway'dagi muhit o‘zgaruvchisini tekshiring.")
+
+try:
+    creds_json = json.loads(creds_json_str)
+except json.JSONDecodeError:
+    raise ValueError("❌ GOOGLE_CREDENTIALS JSON formatida noto‘g‘ri saqlangan. Railway'dagi ma’lumotni tekshiring.")
+
+# Google Sheets API uchun autentifikatsiya qilish
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
+client = gspread.authorize(creds)
+
+print("✅ Google Sheets bilan muvaffaqiyatli bog‘landik!")
+
+
+
 
 
 
