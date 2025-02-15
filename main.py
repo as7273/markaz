@@ -2,6 +2,19 @@
 
 
 
+
+import os
+
+bot_token = os.getenv("BOT_TOKEN")
+
+if bot_token is None or bot_token.strip() == "":
+    print("❌ BOT_TOKEN muhit o‘zgaruvchisi yuklanmadi! Railway'dagi `Variables` bo‘limini tekshiring.")
+    raise ValueError("❌ BOT_TOKEN yo‘q! Railway'dagi muhit o‘zgaruvchisini tekshiring.")
+else:
+    print("✅ BOT_TOKEN muvaffaqiyatli yuklandi!")
+
+
+
 import os
 
 print("🔍 Railway'dan GOOGLE_CREDENTIALS ni tekshiryapmiz...")
