@@ -1,3 +1,37 @@
+
+
+
+
+
+import os
+import json
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+# GOOGLE_CREDENTIALS ni olish
+google_creds = os.getenv("GOOGLE_CREDENTIALS")
+
+if not google_creds:
+    raise ValueError("❌ GOOGLE_CREDENTIALS yo‘q! Railway'dagi muhit o‘zgaruvchisini tekshiring.")
+
+try:
+    creds_json = json.loads(google_creds)
+except json.JSONDecodeError:
+    raise ValueError("❌ GOOGLE_CREDENTIALS noto‘g‘ri JSON formatida saqlangan.")
+
+# Google API uchun autentifikatsiya qilish
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
+client = gspread.authorize(creds)
+
+print("✅ Google Sheets bilan muvaffaqiyatli bog‘landik!")
+
+
+
+
+
+
+
 import os
 
 google_creds = os.getenv("GOOGLE_CREDENTIALS")
