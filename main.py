@@ -1,42 +1,54 @@
-import telebot
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import os
 import json
+import gspread
+import telebot
+from oauth2client.service_account import ServiceAccountCredentials
+from flask import Flask, request
 
-# 🔹 Google Sheets API uchun sozlash
+# 📌 Flask ilovasini yaratamiz (Railway uchun kerak)
+app = Flask(__name__)
+
+# 📌 Railway environment variables orqali API kalitlarni yuklash
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
+
+# 📌 Google Sheets'ga ulanish
+creds_json = json.loads(os.getenv("GOOGLE_CREDENTIALS"))  # Railway'dan JSON yuklash
 SCOPES = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-CREDS_FILE = "service_account.json"  # Railway'ga yuklangan fayl
-credentials = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(os.environ["SERVICE_ACCOUNT_JSON"]), SCOPES)
+
+credentials = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, SCOPES)
 client = gspread.authorize(credentials)
 
-# 🔹 Google Sheets hujjatini ochish
-SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")  # Railway'dan olish
-sheet = client.open_by_key(SPREADSHEET_ID).sheet1  # 1-qatordagi sahifa
+# 📌 Google Sheets sahifasini ochamiz
+sheet = client.open_by_key(SPREADSHEET_ID).sheet1  # Birinchi qatordagi sahifa
 
-# 🔹 Telegram bot tokeni
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Railway'dan olish
-bot = telebot.TeleBot(BOT_TOKEN)
+# 📌 Telegram botini ishga tushiramiz
+bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
-# 🔹 Start komandasi
-@bot.message_handler(commands=["start"])
-def send_welcome(message):
-    bot.reply_to(message, "Salom! Farzandingizning test natijalarini ko‘rish uchun telefon raqamingizni yuboring.")
+# 📌 Start komandasi
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.send_message(message.chat.id, "Salom! Bu bot Google Sheets bilan ishlaydi.")
 
-# 🔹 Telefon raqam orqali natija chiqarish
-@bot.message_handler(content_types=["contact"])
-def get_results(message):
-    phone_number = message.contact.phone_number
+# 📌 Google Sheets'ga yozish funksiyasi
+@bot.message_handler(func=lambda message: True)
+def save_to_sheet(message):
     try:
-        records = sheet.get_all_records()
-        for row in records:
-            if str(row["Telefon"]) == phone_number:
-                result = f"📊 Test natijalari:\n\nFan: {row['Fan']}\nBall: {row['Ball']}%"
-                bot.send_message(message.chat.id, result)
-                return
-        bot.send_message(message.chat.id, "⚠️ Sizning telefon raqamingiz bo‘yicha natija topilmadi.")
+        text = message.text
+        user = message.chat.username or message.chat.first_name
+        sheet.append_row([user, text])  # Foydalanuvchi nomi va xabarini saqlash
+        bot.send_message(message.chat.id, "Xabaringiz Google Sheets'ga saqlandi!")
     except Exception as e:
-        bot.send_message(message.chat.id, f"Xatolik yuz berdi: {e}")
+        bot.send_message(message.chat.id, f"Xatolik: {e}")
 
-# 🔹 Botni ishga tushirish
-bot.polling()
+# 📌 Railway uchun webhook sozlash
+@app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
+def webhook():
+    json_str = request.get_data().decode("UTF-8")
+    update = telebot.types.Update.de_json(json_str)
+    bot.process_new_updates([update])
+    return "OK", 200
+
+# 📌 Flask serverni ishga tushiramiz
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
