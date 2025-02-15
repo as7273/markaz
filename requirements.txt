@@ -1,2 +1,5 @@
 pyTelegramBotAPI
 requests
+telebot
+gspread
+oauth2client
