@@ -1,5 +1,4 @@
-pyTelegramBotAPI
-requests
-telebot
+Flask
 gspread
 oauth2client
+pyTelegramBotAPI
