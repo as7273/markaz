@@ -6,8 +6,6 @@ from oauth2client.service_account import ServiceAccountCredentials
 from flask import Flask, request
 import os
 
-# GOOGLE_CREDENTIALS o'zgaruvchisini ekranga chiqarish
-print("GOOGLE_CREDENTIALS:", os.getenv("GOOGLE_CREDENTIALS"))
 
 # 📌 Flask ilovasini yaratamiz (Railway uchun kerak)
 app = Flask(__name__)
@@ -56,3 +54,6 @@ def webhook():
 # 📌 Flask serverni ishga tushiramiz
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
+# GOOGLE_CREDENTIALS o'zgaruvchisini ekranga chiqarish
+print("GOOGLE_CREDENTIALS:", os.getenv("GOOGLE_CREDENTIALS"))
