@@ -2,11 +2,12 @@ import telebot
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
+import json
 
 # 🔹 Google Sheets API uchun sozlash
 SCOPES = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 CREDS_FILE = "service_account.json"  # Railway'ga yuklangan fayl
-credentials = ServiceAccountCredentials.from_json_keyfile_name(CREDS_FILE, SCOPES)
+credentials = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(os.environ["SERVICE_ACCOUNT_JSON"]), SCOPES)
 client = gspread.authorize(credentials)
 
 # 🔹 Google Sheets hujjatini ochish
