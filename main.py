@@ -1,23 +1,4 @@
 import os
-import json
-
-# GOOGLE_CREDENTIALS'ni tekshiramiz
-google_creds = os.getenv("GOOGLE_CREDENTIALS")
-
-if google_creds is None:
-    print("❌ GOOGLE_CREDENTIALS yo‘q!")
-else:
-    print("✅ GOOGLE_CREDENTIALS bor!")
-    try:
-        creds_json = json.loads(google_creds)
-        print("✅ JSON to‘g‘ri yuklandi!")
-    except json.JSONDecodeError as e:
-        print("❌ JSON xatolik berdi:", e)
-
-
-
-
-import os
 
 google_creds = os.getenv("GOOGLE_CREDENTIALS")
 
